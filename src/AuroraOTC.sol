@@ -83,7 +83,7 @@ contract AuroraOTC {
         uint256 _amount0,
         uint256 _amount1
     ) external {
-        Deal newDeal = Deal(
+        Deal memory newDeal = Deal(
             IERC20(_token0),
             IERC20(_token1),
             _amount0,
@@ -103,9 +103,11 @@ contract AuroraOTC {
     // @param _index Index of the deal to remove
     function removeDeal(uint256 _index) public {
         require(deals[_index].owner == msg.sender, "ONLY OWNER CAN REMOVE DEAL");
+        IERC20 token = deals[_index].token0;
+        uint256 amount = deals[_index].amount0;
         deals[_index] = deals[deals.length - 1];
         deals.pop();
-        deals[_index].token0.transfer(msg.sender, deals[_index].amount0);
+        token.transfer(msg.sender, amount);
 
         emit dealDeletion(_index);
     }
@@ -123,7 +125,9 @@ contract AuroraOTC {
     // @notice Allows anyone to accept an offer from the deals array
     // @param _index Index of the deal they would like to accept
     function acceptDeal(uint256 _index) external {
-        Deal currentDeal = deals[_index];
+        Deal memory currentDeal = deals[_index];
+        deals[_index] = deals[deals.length - 1];
+        deals.pop();
         currentDeal.token1.transferFrom(msg.sender, currentDeal.owner, currentDeal.amount1);
         currentDeal.token0.transfer(msg.sender, currentDeal.amount0);
 
