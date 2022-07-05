@@ -62,8 +62,11 @@ contract AuroraOTC {
     struct Deal {
         IERC20 token0;
         IERC20 token1;
+        uint256 exchangeRate;
         uint256 amount0;
         uint256 amount1;
+        uint256 amount0remaining;
+        uint256 amount1remaining;
         uint256 time;
         address owner;
     }
@@ -86,6 +89,9 @@ contract AuroraOTC {
         Deal memory newDeal = Deal(
             IERC20(_token0),
             IERC20(_token1),
+            _amount0/_amount1,
+            _amount0,
+            _amount1,
             _amount0,
             _amount1,
             block.timestamp,
@@ -104,7 +110,7 @@ contract AuroraOTC {
     function removeDeal(uint256 _index) public {
         require(deals[_index].owner == msg.sender, "ONLY OWNER CAN REMOVE DEAL");
         IERC20 token = deals[_index].token0;
-        uint256 amount = deals[_index].amount0;
+        uint256 amount = deals[_index].amount0remaining;
         deals[_index] = deals[deals.length - 1];
         deals.pop();
         token.transfer(msg.sender, amount);
@@ -124,14 +130,24 @@ contract AuroraOTC {
 
     // @notice Allows anyone to accept an offer from the deals array
     // @param _index Index of the deal they would like to accept
-    function acceptDeal(uint256 _index) external {
+    // @param amount Amount of token to provide
+    function acceptDeal(uint256 _index, uint256 amountToBuy) public {
         Deal memory currentDeal = deals[_index];
-        deals[_index] = deals[deals.length - 1];
-        deals.pop();
-        currentDeal.token1.transferFrom(msg.sender, currentDeal.owner, currentDeal.amount1);
-        currentDeal.token0.transfer(msg.sender, currentDeal.amount0);
+        require(currentDeal.amount0remaining - amountToBuy > 0);
+        if(currentDeal.amount0remaining - amountToBuy == 0) {
+            deals[_index] = deals[deals.length - 1];
+            deals.pop();
+        }
+        uint256 amountToPay = amountToBuy * currentDeal.exchangeRate;
+        currentDeal.token1.transferFrom(msg.sender, currentDeal.owner, amountToPay);
+        currentDeal.token0.transfer(msg.sender, amountToBuy);
 
         emit dealCompletion(currentDeal.owner, msg.sender, block.timestamp);
+    }
+
+    function acceptFullDeal(uint256 _index) external {
+        uint256 amount = deals[_index].amount0remaining;
+        acceptDeal(_index, amount);
     }
 
     
