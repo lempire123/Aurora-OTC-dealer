@@ -15,6 +15,7 @@ function App() {
  const [amount0, setAmount0] = useState()
  const [amount1, setAmount1] = useState()
  const [index, setIndex] = useState()
+ const [buyAmount, setBuyAmount] = useState()
 
   window.onload = async function getChainId() {
     const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -65,6 +66,18 @@ function App() {
     }
   }
 
+  async function takeAllDeal() {
+    if (typeof window.ethereum !== 'undefined') {
+      await requestAccount()
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner()
+      const contract = new ethers.Contract(contractAddress, OTC.abi, signer)
+      const transaction = await contract.acceptFullDeal(index);
+      await transaction.wait();
+      console.log('transaction successful!');
+    }
+  }
+
   return (
     <div className="App">
       
@@ -79,8 +92,12 @@ function App() {
       <input className="input" onChange={e => setAmount0(e.target.value)} placeholder="amount 0" />
       <input className="input" onChange={e => setAmount1(e.target.value)} placeholder="amount 1" />
 
-      <p className="p">Available OTC deals</p>
-      <button className="button" onClick={takeDeal}>Accept deal</button>
+      <p className="p">Select from available OTC deals</p>
+      <button className="button" onClick={takeDeal}>Accept Partial deal</button>
+      <input className="input" onChange={e => setIndex(e.target.value)} placeholder="Deal index" />
+      <input className="input" onChange={e => setBuyAmount(e.target.value)} placeholder="Purchase Amount" />
+
+      <button className="button" onClick={takeDeal}>Accept full deal</button>
       <input className="input" onChange={e => setIndex(e.target.value)} placeholder="Deal index" />
 
         <p className="p">Delete outstanding deal</p>

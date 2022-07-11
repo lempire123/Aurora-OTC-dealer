@@ -39,7 +39,7 @@ contract AuroraOTC {
     // @notice Emitted when a deal is created
     // @param index Index of the deal deleted
     event dealDeletion(
-        uint256 index
+        uint256 indexed index
         );
     
     // @notice Emitted when a deal is created
@@ -62,7 +62,6 @@ contract AuroraOTC {
     struct Deal {
         IERC20 token0;
         IERC20 token1;
-        uint256 exchangeRate;
         uint256 amount0;
         uint256 amount1;
         uint256 amount0remaining;
@@ -89,7 +88,6 @@ contract AuroraOTC {
         Deal memory newDeal = Deal(
             IERC20(_token0),
             IERC20(_token1),
-            _amount0/_amount1,
             _amount0,
             _amount1,
             _amount0,
@@ -131,20 +129,24 @@ contract AuroraOTC {
     // @notice Allows anyone to accept an offer from the deals array
     // @param _index Index of the deal they would like to accept
     // @param amount Amount of token to provide
-    function acceptDeal(uint256 _index, uint256 amountToBuy) public {
+    function acceptDeal(uint256 _index, uint256 amountToReceive) public {
         Deal memory currentDeal = deals[_index];
-        require(currentDeal.amount0remaining - amountToBuy > 0);
-        if(currentDeal.amount0remaining - amountToBuy == 0) {
+        require(currentDeal.amount0remaining - amountToReceive >= 0);
+        if(currentDeal.amount1remaining - amountToReceive == 0) {
             deals[_index] = deals[deals.length - 1];
             deals.pop();
         }
-        uint256 amountToPay = amountToBuy * currentDeal.exchangeRate;
+        uint256 amountToPay = amountToReceive * currentDeal.amount0 / currentDeal.amount1;
+        deals[_index].amount0remaining -= amountToReceive;
+        deals[_index].amount1remaining -= amountToPay;
         currentDeal.token1.transferFrom(msg.sender, currentDeal.owner, amountToPay);
-        currentDeal.token0.transfer(msg.sender, amountToBuy);
+        currentDeal.token0.transfer(msg.sender, amountToReceive);
 
         emit dealCompletion(currentDeal.owner, msg.sender, block.timestamp);
     }
 
+    // @notice Allows anyone to accept the full offer from the deals array
+    // @param _index Index of the deal they would like to accept
     function acceptFullDeal(uint256 _index) external {
         uint256 amount = deals[_index].amount0remaining;
         acceptDeal(_index, amount);

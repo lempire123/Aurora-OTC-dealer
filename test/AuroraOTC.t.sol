@@ -49,9 +49,38 @@ contract ContractTest is Test {
         vm.stopPrank();
         vm.startPrank(user2);
         token2.approve(address(otc), 2**256 - 1);
-        otc.acceptDeal(0);
+        otc.acceptFullDeal(0);
         emit log("after");
         outputBalances();
+    }
+
+    function testPartialDeal() public {
+        vm.startPrank(user1);
+        token1.approve(address(otc), 2**256 - 1);
+        otc.createDeal(address(token1), address(token2), amount1, amount2);
+        vm.stopPrank();
+        vm.startPrank(user2);
+        token2.approve(address(otc), 2**256 - 1);
+        otc.acceptDeal(0, 1);
+        outputBalances();
+        otc.acceptDeal(0, 1);
+        otc.acceptDeal(0, 1);
+        outputBalances();
+    }
+
+    function testPartialDealAndRemove() public {
+        vm.startPrank(user1);
+        token1.approve(address(otc), 2**256 - 1);
+        otc.createDeal(address(token1), address(token2), amount1, amount2);
+        vm.stopPrank();
+        vm.startPrank(user2);
+        token2.approve(address(otc), 2**256 - 1);
+        otc.acceptDeal(0, 1);
+        outputBalances();   
+        vm.stopPrank();
+        vm.startPrank(user1);
+        otc.removeDeal(0);
+        outputBalances();  
     }
 
     function outputBalances() public {
@@ -84,6 +113,6 @@ contract ContractTest is Test {
         vm.startPrank(user3);
         token2.approve(address(otc), 2**256 - 1);
         vm.expectRevert("ERC20: transfer amount exceeds balance");
-        otc.acceptDeal(0);
+        otc.acceptFullDeal(0);
     }
 }
