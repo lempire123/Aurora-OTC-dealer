@@ -8,9 +8,9 @@ import "forge-std/Test.sol";
 
 contract ContractTest is Test {
     AuroraOTC otc;
-    address user1 = address(10);
-    address user2 = address(11);
-    address user3 = address(12);
+    address user1 = address(1);
+    address user2 = address(2);
+    address user3 = address(3);
     ERC20 token1 = new ERC20("1", "1");
     ERC20 token2 = new ERC20("2", "2");
     uint256 amount1 = 10;
@@ -25,11 +25,9 @@ contract ContractTest is Test {
     function testCreateDeal() public {
         vm.startPrank(user1);
         token1.approve(address(otc), 2**256 - 1);
-        emit log_named_uint("User balance", token1.balanceOf(user1));
-        emit log_named_uint("Contract balance", token1.balanceOf(address(otc)));
         otc.createDeal(address(token1), address(token2), amount1, amount2);
-        emit log_named_uint("User balance", token1.balanceOf(user1));
-        emit log_named_uint("Contract balance", token1.balanceOf(address(otc)));
+        assert(token1.balanceOf(user1) == 90);
+        assert(token1.balanceOf(address(otc)) == 10);
     }
 
     function testCreateAndRemoveDeal() public {
@@ -37,21 +35,22 @@ contract ContractTest is Test {
         token1.approve(address(otc), 2**256 - 1);
         otc.createDeal(address(token1), address(token2), amount1, amount2);
         otc.removeDeal(0);
-        outputBalances();
+        assert(token1.balanceOf(user1) == 100);
+        assert(token1.balanceOf(address(otc)) == 0);
     }
 
     function testCreateAndAcceptDeal() public {
         vm.startPrank(user1);
         token1.approve(address(otc), 2**256 - 1);
-        emit log("before");
-        outputBalances();
         otc.createDeal(address(token1), address(token2), amount1, amount2);
         vm.stopPrank();
         vm.startPrank(user2);
         token2.approve(address(otc), 2**256 - 1);
         otc.acceptFullDeal(0);
-        emit log("after");
-        outputBalances();
+        assert(token1.balanceOf(user1) == 90);
+        assert(token1.balanceOf(user2) == 10);
+        assert(token2.balanceOf(user1) == 50);
+        assert(token2.balanceOf(user2) == 50);
     }
 
     function testPartialDeal() public {
@@ -62,10 +61,17 @@ contract ContractTest is Test {
         vm.startPrank(user2);
         token2.approve(address(otc), 2**256 - 1);
         otc.acceptDeal(0, 1);
-        outputBalances();
+        assert(token1.balanceOf(user2) == 1);
+        assert(token2.balanceOf(user1) == 5);
+        assert(token2.balanceOf(user2) == 95);
         otc.acceptDeal(0, 1);
+        assert(token1.balanceOf(user2) == 2);
+        assert(token2.balanceOf(user1) == 10);
+        assert(token2.balanceOf(user2) == 90);
         otc.acceptDeal(0, 1);
-        outputBalances();
+        assert(token1.balanceOf(user2) == 3);
+        assert(token2.balanceOf(user1) == 15);
+        assert(token2.balanceOf(user2) == 85);
     }
 
     function testPartialDealAndRemove() public {
@@ -76,29 +82,21 @@ contract ContractTest is Test {
         vm.startPrank(user2);
         token2.approve(address(otc), 2**256 - 1);
         otc.acceptDeal(0, 1);
-        outputBalances();   
+        assert(token1.balanceOf(user2) == 1);
+        assert(token2.balanceOf(user1) == 5);
+        assert(token2.balanceOf(user2) == 95);
         vm.stopPrank();
         vm.startPrank(user1);
         otc.removeDeal(0);
-        outputBalances();  
-    }
-
-    function outputBalances() public {
-        emit log("TOKEN 1 BALANCES : ");
-        emit log_named_uint("User1", token1.balanceOf(user1));
-        emit log_named_uint("User2", token1.balanceOf(user2));
-        emit log_named_uint("Contract", token1.balanceOf(address(otc)));
-        emit log("TOKEN 2 BALANCES : ");
-        emit log_named_uint("User1", token2.balanceOf(user1));
-        emit log_named_uint("User2", token2.balanceOf(user2));
-        emit log_named_uint("Contract", token2.balanceOf(address(otc)));
+        assert(token1.balanceOf(user1) == 99);
+        assert(token1.balanceOf(user2) == 1);
+        assert(token2.balanceOf(user1) == 5);
+        assert(token2.balanceOf(user2) == 95);
     }
 
      function testCannotCreateDealWithoutTokens() public {
         vm.startPrank(user3);
         token1.approve(address(otc), 2**256 - 1);
-        emit log("before");
-        outputBalances();
         vm.expectRevert("ERC20: transfer amount exceeds balance");
         otc.createDeal(address(token1), address(token2), amount1, amount2);
     }
@@ -106,8 +104,6 @@ contract ContractTest is Test {
     function testCannotAcceptDealWithoutTokens() public {
         vm.startPrank(user1);
         token1.approve(address(otc), 2**256 - 1);
-        emit log("before");
-        outputBalances();
         otc.createDeal(address(token1), address(token2), amount1, amount2);
         vm.stopPrank();
         vm.startPrank(user3);
