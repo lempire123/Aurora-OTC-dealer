@@ -12,7 +12,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
             The easiest way to undersand the use case is through an example :
             Bob has 10 BTC he would like to exchange for USDC tokens, at the current 
             market price of 20k USDC / BTC. He could do so by swapping them on a DEX 
-            such as Trisolaris, but would have to incur a significant slippage fee. 
+            such as Trisolaris, but would have to incur a significant loss due to slippage. 
             Instead he can use Aurora OTC desk to create an "offer" of 10 btc for 
             200k USDC (20k x 10), which anyone looking to buy btc can accept
  */
@@ -57,15 +57,17 @@ contract AuroraOTC {
     // @param token1 Token the owner wishes to receive
     // @param amount0 Amount of token0
     // @param amount1 Amount of token1
+    // @param amount0remaining Amount of token0 left to purchase
+    // @param amount1remaining Amount needed to purchase token0 remaining
     // @param time Time at which deal was created
     // @param owner Address of the creator of the deal
+
+    //TODO remove amount0remaining & amount1remaining - amount0 & amoutn1 can be edited
     struct Deal {
         IERC20 token0;
         IERC20 token1;
         uint256 amount0;
         uint256 amount1;
-        uint256 amount0remaining;
-        uint256 amount1remaining;
         uint256 time;
         address owner;
     }
@@ -85,11 +87,10 @@ contract AuroraOTC {
         uint256 _amount0,
         uint256 _amount1
     ) external {
+        require(_amount0 != 0 && _amount1 != 0);
         Deal memory newDeal = Deal(
             IERC20(_token0),
             IERC20(_token1),
-            _amount0,
-            _amount1,
             _amount0,
             _amount1,
             block.timestamp,
@@ -108,7 +109,7 @@ contract AuroraOTC {
     function removeDeal(uint256 _index) public {
         require(deals[_index].owner == msg.sender, "ONLY OWNER CAN REMOVE DEAL");
         IERC20 token = deals[_index].token0;
-        uint256 amount = deals[_index].amount0remaining;
+        uint256 amount = deals[_index].amount0;
         deals[_index] = deals[deals.length - 1];
         deals.pop();
         token.transfer(msg.sender, amount);
@@ -128,17 +129,19 @@ contract AuroraOTC {
 
     // @notice Allows anyone to accept an offer from the deals array
     // @param _index Index of the deal they would like to accept
-    // @param amount Amount of token to provide
+    // @param amountToReceive Amount of token0 to provide
     function acceptDeal(uint256 _index, uint256 amountToReceive) public {
         Deal memory currentDeal = deals[_index];
-        require(currentDeal.amount0remaining - amountToReceive >= 0);
-        if(currentDeal.amount1remaining - amountToReceive == 0) {
+        require(currentDeal.amount0 - amountToReceive >= 0);
+        uint256 amountToPay = amountToReceive * currentDeal.amount1 / currentDeal.amount0;
+        if(currentDeal.amount0 - amountToReceive == 0) {
             deals[_index] = deals[deals.length - 1];
             deals.pop();
+        } else {
+            deals[_index].amount0 -= amountToReceive;
+            deals[_index].amount1 -= amountToPay;
         }
-        uint256 amountToPay = amountToReceive * currentDeal.amount0 / currentDeal.amount1;
-        deals[_index].amount0remaining -= amountToReceive;
-        deals[_index].amount1remaining -= amountToPay;
+        
         currentDeal.token1.transferFrom(msg.sender, currentDeal.owner, amountToPay);
         currentDeal.token0.transfer(msg.sender, amountToReceive);
 
@@ -148,7 +151,7 @@ contract AuroraOTC {
     // @notice Allows anyone to accept the full offer from the deals array
     // @param _index Index of the deal they would like to accept
     function acceptFullDeal(uint256 _index) external {
-        uint256 amount = deals[_index].amount0remaining;
+        uint256 amount = deals[_index].amount0;
         acceptDeal(_index, amount);
     }
 
