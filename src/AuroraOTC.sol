@@ -22,36 +22,6 @@ contract AuroraOTC {
     // Array of available deals
     Deal[] public deals;
 
-    /*////////////////////////////////////
-                   EVENTS
-    ////////////////////////////////////*/
-
-    // @notice Emitted when a deal is created
-    // @param token0 Token provided by the owner of the deal
-    // @param token1 Token the owner wishes to receive
-    // @param owner Address of the creator of the deal
-    event dealCreation(
-        address indexed token0, 
-        address indexed token1, 
-        address indexed owner
-        );
-
-    // @notice Emitted when a deal is created
-    // @param index Index of the deal deleted
-    event dealDeletion(
-        uint256 indexed index
-        );
-    
-    // @notice Emitted when a deal is created
-    // @param maker Address of the owner of the deal
-    // @param taker Address of the acceptor of the deal
-    // @param time Time at which deal was accepted
-    event dealCompletion(
-        address indexed maker, 
-        address indexed taker, 
-        uint256 indexed time
-        );
-
     // @notice Deal represents an OTC offer made by an address
     // @param token0 Token provided by the owner of the deal
     // @param token1 Token the owner wishes to receive
