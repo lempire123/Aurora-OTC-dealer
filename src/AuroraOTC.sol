@@ -57,8 +57,6 @@ contract AuroraOTC {
     // @param token1 Token the owner wishes to receive
     // @param amount0 Amount of token0
     // @param amount1 Amount of token1
-    // @param amount0remaining Amount of token0 left to purchase
-    // @param amount1remaining Amount needed to purchase token0 remaining
     // @param time Time at which deal was created
     // @param owner Address of the creator of the deal
 
