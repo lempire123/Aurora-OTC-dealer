@@ -59,8 +59,6 @@ contract AuroraOTC {
     // @param amount1 Amount of token1
     // @param time Time at which deal was created
     // @param owner Address of the creator of the deal
-
-    //TODO remove amount0remaining & amount1remaining - amount0 & amoutn1 can be edited
     struct Deal {
         IERC20 token0;
         IERC20 token1;
@@ -69,10 +67,6 @@ contract AuroraOTC {
         uint256 time;
         address owner;
     }
-
-    /*////////////////////////////////////
-             EXTERNAL FUNCTIONS
-    ////////////////////////////////////*/
 
     // @notice Allows anyone to setup an OTC offer
     // @param _token0 Token provided by the creator of the deal
@@ -152,6 +146,4 @@ contract AuroraOTC {
         uint256 amount = deals[_index].amount0;
         acceptDeal(_index, amount);
     }
-
-    
 }
