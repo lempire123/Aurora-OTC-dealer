@@ -23,12 +23,6 @@ contract AuroraOTC {
     Deal[] public deals;
 
     // @notice Deal represents an OTC offer made by an address
-    // @param token0 Token provided by the owner of the deal
-    // @param token1 Token the owner wishes to receive
-    // @param amount0 Amount of token0
-    // @param amount1 Amount of token1
-    // @param time Time at which deal was created
-    // @param owner Address of the creator of the deal
     struct Deal {
         IERC20 token0;
         IERC20 token1;
@@ -62,7 +56,6 @@ contract AuroraOTC {
         IERC20(_token0).transferFrom(msg.sender, address(this), _amount0);
 
         emit dealCreation(_token0, _token1, msg.sender);
-
     }
 
     // @notice Allows anyone to remove a deal from the marketplace
